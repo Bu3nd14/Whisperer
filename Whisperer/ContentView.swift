@@ -32,18 +32,18 @@ struct ContentView: View {
                 .navigationTitle("Whisperer")
             }
             .tabItem {
-                Label("Traduzione", systemImage: "captions.bubble")
+                Label("Translation", systemImage: "captions.bubble")
             }
 
             settingsTab
                 .tabItem {
-                    Label("Impostazioni", systemImage: "key")
+                    Label("Settings", systemImage: "key")
                 }
         }
-        .alert("Traduzione non disponibile", isPresented: errorBinding) {
+        .alert("Translation unavailable", isPresented: errorBinding) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(transcriber.errorMessage ?? "Errore sconosciuto")
+            Text(transcriber.errorMessage ?? "Unknown error")
         }
     }
 
@@ -53,16 +53,16 @@ struct ContentView: View {
                 .font(.headline)
                 .foregroundStyle(transcriber.isRecording ? .red : .secondary)
                 .symbolEffect(.pulse, isActive: transcriber.isRecording)
-            Text("Trascrizione multilingua live e traduzione inglese per brevi segmenti.")
+            Text("Live multilingual transcription and English translation for short segments.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             HStack(spacing: 16) {
                 Label(
-                    transcriber.isAPIConnected ? "API connessa" : "API non connessa",
+                    transcriber.isAPIConnected ? "API connected" : "API disconnected",
                     systemImage: transcriber.isAPIConnected ? "checkmark.circle.fill" : "circle.dashed"
                 )
                 Label(
-                    transcriber.audioSecondsSent.formatted(.number.precision(.fractionLength(1))) + " s audio",
+                    transcriber.audioSecondsSent.formatted(.number.precision(.fractionLength(1))) + " s of audio",
                     systemImage: "arrow.up.circle"
                 )
             }
@@ -70,7 +70,7 @@ struct ContentView: View {
             .foregroundStyle(.secondary)
             ProgressView(value: transcriber.microphoneLevel)
                 .tint(transcriber.microphoneLevel > 0.08 ? .green : .secondary)
-                .accessibilityLabel("Livello microfono")
+                .accessibilityLabel("Microphone level")
             Text("Debug: Documents/\(transcriber.debugLogName)")
                 .font(.caption2.monospaced())
                 .foregroundStyle(.tertiary)
@@ -80,15 +80,15 @@ struct ContentView: View {
     private var settingsTab: some View {
         NavigationStack {
             Form {
-                Section("Chiave OpenAI") {
+                Section("OpenAI API key") {
                     SecureField("sk-...", text: $apiKey)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
 
-                    Button("Salva nel Keychain") {
+                    Button("Save to Keychain") {
                         do {
                             try KeychainStore.saveAPIKey(apiKey)
-                            keyStatus = apiKey.isEmpty ? "Chiave rimossa" : "Chiave salvata"
+                            keyStatus = apiKey.isEmpty ? "Key removed" : "Key saved"
                         } catch {
                             keyStatus = error.localizedDescription
                         }
@@ -101,8 +101,8 @@ struct ContentView: View {
                     }
                 }
 
-                Section("Sicurezza") {
-                    Text("Solo POC: la chiave resta nel Keychain, ma viene usata direttamente dal client. Non distribuire questa build.")
+                Section("Security") {
+                    Text("Proof of concept only: the key remains in the Keychain but is used directly by the client. Do not distribute this build.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -113,7 +113,7 @@ struct ContentView: View {
                         .textSelection(.enabled)
                 }
             }
-            .navigationTitle("Impostazioni")
+            .navigationTitle("Settings")
             .disabled(transcriber.isRecording || transcriber.isBusy)
         }
     }
@@ -121,10 +121,10 @@ struct ContentView: View {
     private var transcriptCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Testo originale")
+                Text("Original text")
                     .font(.headline)
                 Spacer()
-                Button("Pulisci") { transcriber.clearTranscript() }
+                Button("Clear") { transcriber.clearTranscript() }
                     .font(.subheadline)
                     .disabled(
                         (transcriber.displayedTranscript.isEmpty && transcriber.sourceTranscript.isEmpty)
@@ -134,7 +134,7 @@ struct ContentView: View {
 
             scrollingTranscript(
                 transcriber.displayedSourceTranscript,
-                placeholder: "La voce riconosciuta apparirà qui.",
+                placeholder: "Recognized speech will appear here.",
                 anchor: .source,
                 height: 120,
                 foreground: .secondary
@@ -143,24 +143,24 @@ struct ContentView: View {
             Divider()
 
             HStack {
-                Text("Traduzione inglese")
+                Text("English translation")
                     .font(.headline)
                 Spacer()
                 if transcriber.pendingTranslations > 0 {
                     ProgressView()
                         .controlSize(.small)
-                    Text("Traduzione...")
+                    Text("Translating...")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else if transcriber.hasReceivedTranslation {
-                    Label("Aggiornata", systemImage: "checkmark.circle.fill")
+                    Label("Updated", systemImage: "checkmark.circle.fill")
                         .font(.caption)
                         .foregroundStyle(.green)
                 }
             }
             scrollingTranscript(
                 transcriber.displayedTranscript,
-                placeholder: "La traduzione inglese apparirà qui mentre parli.",
+                placeholder: "The English translation will appear here as you speak.",
                 anchor: .translation,
                 height: 180,
                 foreground: .primary
@@ -201,7 +201,7 @@ struct ContentView: View {
             }
         } label: {
             Label(
-                transcriber.isRecording ? "Termina traduzione" : "Avvia traduzione",
+                transcriber.isRecording ? "Stop translation" : "Start translation",
                 systemImage: transcriber.isRecording ? "stop.fill" : "mic.fill"
             )
             .frame(maxWidth: .infinity)

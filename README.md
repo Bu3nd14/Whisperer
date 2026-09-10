@@ -1,19 +1,19 @@
 # Whisperer
 
-POC iOS per trascrivere segmenti audio multilingua con `gpt-transcribe` e tradurli in inglese con `gpt-4.1-mini`.
+iOS proof of concept that transcribes multilingual audio segments with `gpt-transcribe` and translates them into English with `gpt-4.1-mini`.
 
-## Prova su iPhone
+## Run on iPhone
 
-1. Apri `Whisperer.xcodeproj` con Xcode.
-2. Seleziona il target `Whisperer` e verifica il tuo team in Signing & Capabilities.
-3. Seleziona il tuo iPhone come destinazione e avvia l'app.
-4. Apri il tab **Impostazioni**, inserisci la chiave OpenAI e premi **Salva nel Keychain**.
-5. Torna al tab **Traduzione**, premi **Avvia traduzione**, autorizza il microfono e attendi l'indicatore **API connessa**.
-6. Parla in una o più lingue: la traduzione inglese apparirà progressivamente.
-7. Premi **Termina traduzione** per terminare la sessione e ricevere gli ultimi delta.
+1. Open `Whisperer.xcodeproj` in Xcode.
+2. Select the `Whisperer` target and configure your team under Signing & Capabilities.
+3. Select your iPhone as the destination and run the app.
+4. Open the **Settings** tab, enter your OpenAI API key, and tap **Save to Keychain**.
+5. Return to the **Translation** tab, tap **Start translation**, grant microphone access, and wait for the **API connected** indicator.
+6. Speak in one or more languages. The English translation will appear progressively.
+7. Tap **Stop translation** to end the session and receive the final deltas.
 
-La POC invia PCM16 mono a 24 kHz alla Realtime Transcription API con un guadagno `5x` e riduzione del rumore `far_field`, adatta a conversazioni e sorgenti nella stanza. Il log registra separatamente livello originale, livello trasmesso e clipping. Il VAD locale valuta il segnale trasmesso con una soglia RMS di `0.004` per iniziare e `0.002` per continuare; circa 600 ms di silenzio o 6 secondi di audio buffered finalizzano un segmento, mentre il buffer inattivo viene svuotato ogni 2 secondi. I segmenti vengono tradotti in parallelo tramite la Responses API e mostrati nell'ordine originale. La lingua sorgente viene riconosciuta automaticamente e la destinazione è inglese. La chiave non è inclusa nei sorgenti e viene salvata nel Keychain del dispositivo.
+The proof of concept sends 24 kHz mono PCM16 audio to the Realtime Transcription API with `5x` gain and `far_field` noise reduction, making it suitable for conversations and audio sources in the room. Logs record the original level, transmitted level, and clipping separately. Local VAD evaluates the transmitted signal using an RMS threshold of `0.004` to start and `0.002` to continue. A segment is finalized after approximately 600 ms of silence or 6 seconds of buffered audio, while inactive buffers are cleared every 2 seconds. Segments are translated concurrently through the Responses API and displayed in their original order. The source language is detected automatically and the target language is English. The API key is not included in the source code and is stored in the device Keychain.
 
-## Sicurezza
+## Security
 
-L'uso diretto di una API key permanente da un'app mobile è accettabile solo per questa prova personale. Prima di distribuire l'app, aggiungi un backend che crei token brevi tramite `POST /v1/realtime/client_secrets` e fai autenticare il client con quei token effimeri.
+Using a permanent API key directly from a mobile app is acceptable only for this personal proof of concept. Before distributing the app, add a backend that creates short-lived tokens through `POST /v1/realtime/client_secrets` and authenticate the client with those ephemeral tokens.

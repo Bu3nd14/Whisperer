@@ -9,7 +9,7 @@ final class RealtimeTranscriber: ObservableObject {
     @Published private(set) var transcript = ""
     @Published private(set) var partialTranscript = ""
     @Published private(set) var sourceTranscript = ""
-    @Published private(set) var status = "Pronto"
+    @Published private(set) var status = "Ready"
     @Published private(set) var errorMessage: String?
     @Published private(set) var isAPIConnected = false
     @Published private(set) var audioSecondsSent = 0.0
@@ -51,7 +51,7 @@ final class RealtimeTranscriber: ObservableObject {
 
         let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else {
-            errorMessage = "Inserisci prima una chiave API OpenAI."
+            errorMessage = "Enter an OpenAI API key first."
             return
         }
 
@@ -74,24 +74,24 @@ final class RealtimeTranscriber: ObservableObject {
         bufferedAudioDuration = 0
         silenceDuration = 0
         errorMessage = nil
-        status = "Richiesta accesso al microfono..."
+        status = "Requesting microphone access..."
         RealtimeDebugLogger.reset()
 
         guard await AVAudioApplication.requestRecordPermission() else {
             isBusy = false
-            status = "Microfono non autorizzato"
-            errorMessage = "Abilita il microfono in Impostazioni > Privacy e sicurezza > Microfono."
+            status = "Microphone access denied"
+            errorMessage = "Enable microphone access in Settings > Privacy & Security > Microphone."
             return
         }
 
         do {
             try configureAudioSession()
             try connect(apiKey: key)
-            status = "Configurazione traduzione..."
+            status = "Configuring translation..."
         } catch {
             stopImmediately()
             isBusy = false
-            status = "Errore"
+            status = "Error"
             errorMessage = error.localizedDescription
         }
     }
@@ -103,7 +103,7 @@ final class RealtimeTranscriber: ObservableObject {
         audioEngine.stop()
         isRecording = false
         isBusy = true
-        status = "Finalizzazione..."
+        status = "Finalizing..."
         if hasDetectedSpeech {
             send(event: ["type": "input_audio_buffer.commit"])
             hasDetectedSpeech = false
@@ -374,7 +374,7 @@ final class RealtimeTranscriber: ObservableObject {
             if isBusy && !isRecording { finishSession() }
         case "conversation.item.input_audio_transcription.failed":
             let details = event["error"] as? [String: Any]
-            errorMessage = details?["message"] as? String ?? "Trascrizione del segmento fallita."
+            errorMessage = details?["message"] as? String ?? "Segment transcription failed."
             partialTranscript = ""
             if isBusy && !isRecording { finishSession() }
         case "session.updated":
@@ -384,22 +384,22 @@ final class RealtimeTranscriber: ObservableObject {
                 try startAudioCapture()
                 isRecording = true
                 isBusy = false
-                status = "Trascrizione e traduzione"
+                status = "Transcribing and translating"
             } catch {
                 errorMessage = error.localizedDescription
                 stopImmediately()
-                status = "Errore"
+                status = "Error"
             }
         case "error":
             let details = event["error"] as? [String: Any]
-            let message = details?["message"] as? String ?? "Errore sconosciuto della Realtime API."
+            let message = details?["message"] as? String ?? "Unknown Realtime API error."
             if isBusy && !isRecording && message.localizedCaseInsensitiveContains("buffer") {
                 finishSession()
                 return
             }
             errorMessage = message
             stopImmediately()
-            status = "Errore"
+            status = "Error"
         default:
             break
         }
@@ -407,7 +407,7 @@ final class RealtimeTranscriber: ObservableObject {
 
     private func enqueueTranslation(_ source: String) {
         guard !apiKey.isEmpty else {
-            errorMessage = "La chiave OpenAI non è più disponibile nel Keychain."
+            errorMessage = "The OpenAI API key is no longer available in the Keychain."
             return
         }
 
@@ -439,7 +439,7 @@ final class RealtimeTranscriber: ObservableObject {
         completedTranslations[id] = result
 
         if let error {
-            errorMessage = "Traduzione fallita: \(error.localizedDescription)"
+            errorMessage = "Translation failed: \(error.localizedDescription)"
             RealtimeDebugLogger.logIncoming([
                 "type": "translation.error",
                 "translation_id": id,
@@ -480,11 +480,11 @@ final class RealtimeTranscriber: ObservableObject {
               (200..<300).contains(httpResponse.statusCode) else {
             let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
             let details = body?["error"] as? [String: Any]
-            throw TranscriberError.translationFailed(details?["message"] as? String ?? "Risposta HTTP non valida.")
+            throw TranscriberError.translationFailed(details?["message"] as? String ?? "Invalid HTTP response.")
         }
         guard let body = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let output = body["output"] as? [[String: Any]] else {
-            throw TranscriberError.translationFailed("Testo tradotto assente nella risposta.")
+            throw TranscriberError.translationFailed("The response does not contain translated text.")
         }
         let texts = output.flatMap { item -> [String] in
             guard let content = item["content"] as? [[String: Any]] else { return [] }
@@ -492,7 +492,7 @@ final class RealtimeTranscriber: ObservableObject {
         }
         let translation = texts.joined().trimmingCharacters(in: .whitespacesAndNewlines)
         guard !translation.isEmpty else {
-            throw TranscriberError.translationFailed("Il modello ha restituito una traduzione vuota.")
+            throw TranscriberError.translationFailed("The model returned an empty translation.")
         }
         return translation
     }
@@ -501,7 +501,7 @@ final class RealtimeTranscriber: ObservableObject {
         guard webSocket != nil else { return }
         errorMessage = error.localizedDescription
         stopImmediately()
-        status = "Connessione interrotta"
+        status = "Connection interrupted"
     }
 
     private func finishSession() {
@@ -516,7 +516,7 @@ final class RealtimeTranscriber: ObservableObject {
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         isBusy = false
         isAPIConnected = false
-        status = "Pronto"
+        status = "Ready"
     }
 
     private func stopImmediately() {
@@ -546,8 +546,8 @@ private enum TranscriberError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidURL: "URL della Realtime API non valido."
-        case .unsupportedAudioFormat: "Il formato audio del microfono non è supportato."
+        case .invalidURL: "Invalid Realtime API URL."
+        case .unsupportedAudioFormat: "The microphone audio format is not supported."
         case .translationFailed(let message): message
         }
     }
